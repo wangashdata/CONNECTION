@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Crop Circle — Farmers & Marketplace</title>
+  <meta name="description" content="Crop Circle — marketplace for farmers, agro & livestock products, and professionals." />
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{
+      --bg:#0f1724; /* dark blue */
+      --card:#0b1420;
+      --muted:#94a3b8;
+      --accent:#06b6d4;
+      --glass: rgba(255,255,255,0.03);
+      --radius:14px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071026 0%, #072034 100%);color:#e6eef6}
+    .wrap{max-width:1200px;margin:28px auto;padding:20px}
+
+    header{display:flex;gap:18px;align-items:center;justify-content:space-between}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:700;color:#042029}
+    nav{display:flex;gap:10px}
+    .tab{background:var(--glass);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--muted)}
+    .tab.active{color:var(--accent);box-shadow:0 6px 18px rgba(6,182,212,0.08);backdrop-filter: blur(6px)}
+
+    main{margin-top:20px;display:grid;grid-template-columns:1fr 360px;gap:20px}
+
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:16px;border-radius:var(--radius);box-shadow:0 6px 30px rgba(2,6,23,0.6)}
+    .searchbar{display:flex;gap:8px;margin-bottom:12px}
+    .searchbar input, .searchbar select{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+
+    .card{background:#071826;border-radius:12px;padding:12px;display:flex;gap:12px;align-items:flex-start}
+    .card img{width:100px;height:82px;object-fit:cover;border-radius:10px}
+    .card h4{margin:0 0 6px 0;font-size:15px}
+    .muted{color:var(--muted);font-size:13px}
+    .pill{padding:6px 8px;border-radius:999px;font-size:12px;background:rgba(255,255,255,0.03);color:var(--muted);display:inline-block}
+
+    .rightcol{position:sticky;top:20px}
+    .chart-wrap{height:220px;margin-bottom:12px}
+
+    footer{margin-top:22px;color:var(--muted);text-align:center}
+
+    /* Modal */
+    .modal{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal.show{display:flex}
+    .modal-card{width:100%;max-width:760px;background:linear-gradient(180deg,#081226,#051126);padding:18px;border-radius:12px}
+
+    /* responsive */
+    @media (max-width:920px){main{grid-template-columns:1fr} .rightcol{position:relative;top:auto}}
+
+    /* Monetization cards */
+    .pricing{display:flex;gap:12px;flex-wrap:wrap}
+    .price-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:16px;border-radius:12px;min-width:180px}
+    .btn{padding:10px 12px;border-radius:10px;border:0;background:var(--accent);color:#042029;font-weight:700;cursor:pointer}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+
+    .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+
+    .meta{display:flex;gap:8px;align-items:center}
+    .small{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">CC</div>
+        <div>
+          <div style="font-weight:800;font-size:18px">Crop Circle</div>
+          <div class="small">Connecting farmers, buyers & professionals</div>
+        </div>
+      </div>
+      <nav id="nav">
+        <div class="tab active" data-tab="farmers">Farmers</div>
+        <div class="tab" data-tab="products">Products</div>
+        <div class="tab" data-tab="professionals">Professionals</div>
+        <div class="tab" data-tab="monetization">Monetization</div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel" id="content">
+        <!-- Dynamic content inserted here -->
+      </section>
+
+      <aside class="rightcol">
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:800">Marketplace Stats</div>
+            <div class="small">Live preview</div>
+          </div>
+          <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+
+          <div style="font-weight:700;margin-bottom:8px">Quick actions</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn" id="openAdd">Add listing</button>
+            <button class="btn secondary" id="seedData">Seed sample data</button>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="panel">
+          <div style="font-weight:800;margin-bottom:8px">Top professionals</div>
+          <div id="proList" class="grid"></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      Built with ❤️ — demo UI. Images from Unsplash. Open-source friendly.
+    </footer>
+  </div>
+
+  <!-- Modal for details & add listing -->
+  <div class="modal" id="modal">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div id="modalContent"></div>
+      <div style="text-align:right;margin-top:12px">
+        <button class="btn secondary" id="closeModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*********************** Sample App Logic ***********************/
+    const state = {
+      tab: 'farmers',
+      products: [],
+      farmers: [],
+      professionals: []
+    }
+
+    // DOM refs
+    const nav = document.getElementById('nav')
+    const tabs = Array.from(nav.querySelectorAll('.tab'))
+    const content = document.getElementById('content')
+    const modal = document.getElementById('modal')
+    const modalContent = document.getElementById('modalContent')
+
+    // Utility: Unsplash random images (collection id) — will fetch unique images via sig
+    function imgUrl(kind, sig){
+      const map = {agro: 190727, livestock: 1127163, farmer: 827743, pro: 1423174}
+      const col = map[kind] || 190727
+      return `https://source.unsplash.com/collection/${col}/800x600?sig=${sig}`
+    }
+
+    // Seed sample data
+    function seed(){
+      state.farmers = [
+        {id:1,name:'Nairobi Greens Co-op',location:'Kiambu, Kenya',rating:4.8, image:imgUrl('farmer',1), info:'Smallholder vegetable producers collective.'},
+        {id:2,name:'Mara Livestock Farm',location:'Narok, Kenya',rating:4.6,image:imgUrl('farmer',2),info:'Cattle and small ruminants.'},
+        {id:3,name:'Kisumu Organic',location:'Kisumu, Kenya',rating:4.9,image:imgUrl('farmer',3),info:'Organic maize & legumes producer.'}
+      ]
+
+      state.products = [
+        {id:101,title:'Red Onion (50kg)',type:'agro',price:12000,currency:'KES',farmer:'Nairobi Greens Co-op',image:imgUrl('agro',11),qty:50,unit:'kg'},
+        {id:102,title:'Fresh Tomatoes (crate)',type:'agro',price:4500,currency:'KES',farmer:'Nairobi Greens Co-op',image:imgUrl('agro',12),qty:1,unit:'crate'},
+        {id:103,title:'Grade A Cattle (4yo)',type:'livestock',price:150000,currency:'KES',farmer:'Mara Livestock Farm',image:imgUrl('livestock',22),qty:1,unit:'head'},
+        {id:104,title:'Goat (2yo)',type:'livestock',price:8500,currency:'KES',farmer:'Mara Livestock Farm',image:imgUrl('livestock',23),qty:1,unit:'head'},
+        {id:105,title:'Organic Maize (90kg)',type:'agro',price:6000,currency:'KES',farmer:'Kisumu Organic',image:imgUrl('agro',13),qty:90,unit:'bag'}
+      ]
+
+      state.professionals = [
+        {id:201,name:'AgroVet Services',role:'Veterinarian & Extension',rating:4.7,location:'Nairobi',image:imgUrl('pro',31),fee:'KES 2,500/visit'},
+        {id:202,name:'SoilSense Labs',role:'Soil Testing & Advisory',rating:4.9,location:'Kisumu',image:imgUrl('pro',32),fee:'KES 1,500/test'},
+        {id:203,name:'MarketLink Brokers',role:'Buyers & Aggregators',rating:4.6,location:'Mombasa',image:imgUrl('pro',33),fee:'Commission-based'}
+      ]
+
+      saveToStorage()
+      render()
+    }
+
+    // Local storage persistence
+    function saveToStorage(){
+      localStorage.setItem('cc_state', JSON.stringify(state))
+    }
+    function loadFromStorage(){
+      const s = localStorage.getItem('cc_state')
+      if(s){
+        try{ const parsed = JSON.parse(s); Object.assign(state, parsed) }catch(e){console.warn(e)}
+      } else {
+        seed()
+      }
+    }
+
+    // Navigation
+    nav.addEventListener('click', (e)=>{
+      const t = e.target.closest('.tab')
+      if(!t) return
+      tabs.forEach(x=>x.classList.remove('active'))
+      t.classList.add('active')
+      state.tab = t.dataset.tab
+      render()
+    })
+
+    // Render main content depending on tab
+    function render(){
+      if(state.tab==='farmers') renderFarmers()
+      if(state.tab==='products') renderProducts()
+      if(state.tab==='professionals') renderProfessionals()
+      if(state.tab==='monetization') renderMonetization()
+      renderTopProfessionals()
+      updateChart()
+      saveToStorage()
+    }
+
+    /* ---------- FARMERS ---------- */
+    function renderFarmers(){
+      content.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-weight:800;font-size:18px">Farmers</div>
+            <div class="small">Browse farmer organizations & producers</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="contactAll">Message all</button>
+            <button class="btn secondary" id="openAddFromFarmers">Add farmer</button>
+          </div>
+        </div>
+
+        <div class="searchbar">
+          <input id="farmSearch" placeholder="Search farmer or location..." />
+          <select id="farmSort"><option value="rating">Sort: Rating</option><option value="name">Sort: Name</option></select>
+        </div>
+
+        <div class="grid" id="farmerGrid"></div>
+      `
+
+      const grid = document.getElementById('farmerGrid')
+      const q = document.getElementById('farmSearch')
+      const sort = document.getElementById('farmSort')
+
+      function refresh(){
+        const term = q.value.toLowerCase().trim()
+        let items = state.farmers.filter(f => f.name.toLowerCase().includes(term) || f.location.toLowerCase().includes(term))
+        if(sort.value==='rating') items = items.sort((a,b)=>b.rating-a.rating)
+        else items = items.sort((a,b)=>a.name.localeCompare(b.name))
+
+        grid.innerHTML = items.map(f => `
+          <div class="card">
+            <img src="${f.image}" alt="${f.name}" />
+            <div style="flex:1">
+              <h4>${f.name}</h4>
+              <div class="muted">${f.info}</div>
+              <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+                <div class="small">${f.location} • <span class="pill">★ ${f.rating}</span></div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn secondary" data-id="${f.id}" data-action="view-f">View</button>
+                  <button class="btn" data-id="${f.id}" data-action="contact-f">Contact</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')
+
+        // attach view/contact
+        grid.querySelectorAll('button').forEach(b=>b.addEventListener('click', (e)=>{
+          const id = Number(b.dataset.id)
+          const action = b.dataset.action
+          const f = state.farmers.find(x=>x.id===id)
+          if(action==='view-f') showFarmer(f)
+          if(action==='contact-f') alert(`Open messaging to: ${f.name}`)
+        }))
+      }
+
+      q.addEventListener('input', refresh)
+      sort.addEventListener('change', refresh)
+      document.getElementById('openAddFromFarmers').addEventListener('click', ()=>openAdd('farmer'))
+      document.getElementById('contactAll').addEventListener('click', ()=>alert('Messaging feature (demo)'))
+
+      refresh()
+    }
+
+    function showFarmer(f){
+      modalContent.innerHTML = `
+        <div style="display:flex;gap:12px">
+          <img src="${f.image}" alt="${f.name}" style="width:180px;height:120px;object-fit:cover;border-radius:8px" />
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:18px">${f.name}</div>
+            <div class="muted">${f.location} • Rating: ${f.rating}</div>
+            <div style="margin-top:8px">${f.info}</div>
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <button class="btn" onclick="alert('Contacting ${f.name} (demo)')">Contact</button>
+              <button class="btn secondary" onclick="alert('View listings by ${f.name} (demo)')">View listings</button>
+            </div>
+          </div>
+        </div>
+      `
+      modal.classList.add('show')
+    }
+
+    /* ---------- PRODUCTS ---------- */
+    function renderProducts(){
+      content.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-weight:800;font-size:18px">Products</div>
+            <div class="small">Agro & livestock listings</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="bulkMsgBuyer">Message sellers</button>
+            <button class="btn secondary" id="openAddProduct">Add product</button>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <input id="prodSearch" placeholder="Search product or farmer..." />
+          <select id="typeFilter"><option value="all">All types</option><option value="agro">Agro</option><option value="livestock">Livestock</option></select>
+          <select id="priceSort"><option value="new">Newest</option><option value="low">Price: Low → High</option><option value="high">Price: High → Low</option></select>
+        </div>
+
+        <div class="grid" id="productGrid"></div>
+      `
+
+      const grid = document.getElementById('productGrid')
+      const search = document.getElementById('prodSearch')
+      const typeFilter = document.getElementById('typeFilter')
+      const priceSort = document.getElementById('priceSort')
+
+      function refresh(){
+        const s = search.value.toLowerCase().trim()
+        let items = state.products.filter(p => (p.title.toLowerCase().includes(s) || p.farmer.toLowerCase().includes(s)))
+        if(typeFilter.value!=='all') items = items.filter(x=>x.type===typeFilter.value)
+        if(priceSort.value==='low') items = items.sort((a,b)=>a.price-b.price)
+        if(priceSort.value==='high') items = items.sort((a,b)=>b.price-a.price)
+
+        grid.innerHTML = items.map(p => `
+          <div class="card">
+            <img src="${p.image}" alt="${p.title}" />
+            <div style="flex:1">
+              <h4>${p.title}</h4>
+              <div class="muted">${p.farmer} • ${p.qty} ${p.unit}</div>
+              <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:700">${p.currency} ${p.price.toLocaleString()}</div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn secondary" data-id="${p.id}" data-action="view-p">View</button>
+                  <button class="btn" data-id="${p.id}" data-action="buy-p">Buy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')
+
+        grid.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{
+          const id = Number(b.dataset.id)
+          const action = b.dataset.action
+          const item = state.products.find(x=>x.id===id)
+          if(action==='view-p') showProduct(item)
+          if(action==='buy-p') openBuy(item)
+        }))
+      }
+
+      search.addEventListener('input', refresh)
+      typeFilter.addEventListener('change', refresh)
+      priceSort.addEventListener('change', refresh)
+      document.getElementById('openAddProduct').addEventListener('click', ()=>openAdd('product'))
+      document.getElementById('bulkMsgBuyer').addEventListener('click', ()=>alert('Messaging multiple sellers (demo)'))
+      refresh()
+    }
+
+    function showProduct(p){
+      modalContent.innerHTML = `
+        <div style="display:flex;gap:12px">
+          <img src="${p.image}" alt="${p.title}" style="width:260px;height:160px;object-fit:cover;border-radius:6px" />
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:18px">${p.title}</div>
+            <div class="muted">Sold by ${p.farmer} • ${p.qty} ${p.unit}</div>
+            <div style="margin-top:8px">Price: <strong>${p.currency} ${p.price.toLocaleString()}</strong></div>
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <button class="btn" onclick="alert('Proceed to checkout (demo)')">Checkout</button>
+              <button class="btn secondary" onclick="alert('Saved to favorites (demo)')">Save</button>
+            </div>
+            <div style="margin-top:10px" class="small">Description: Fresh, high quality produce handled with care. Buyer to inspect on pickup/delivery.</div>
+          </div>
+        </div>
+      `
+      modal.classList.add('show')
+    }
+
+    // Mock buy flow
+    function openBuy(item){
+      modalContent.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-weight:800">Buy — ${item.title}</div>
+          <div class="muted">Price: ${item.currency} ${item.price.toLocaleString()}</div>
+          <label class="small">Quantity</label>
+          <input id="buyQty" type="number" value="1" min="1" style="padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit" />
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn" id="confirmBuy">Pay (demo)</button>
+            <button class="btn secondary" id="cancelBuy">Cancel</button>
+          </div>
+        </div>
+      `
+      modal.classList.add('show')
+
+      document.getElementById('confirmBuy').addEventListener('click', ()=>{
+        const q = Number(document.getElementById('buyQty').value)
+        alert(`Checkout simulated: ${q} × ${item.title} — Total ${item.currency} ${ (q * item.price).toLocaleString() }`)
+        modal.classList.remove('show')
+      })
+      document.getElementById('cancelBuy').addEventListener('click', ()=>modal.classList.remove('show'))
+    }
+
+    /* ---------- PROFESSIONALS ---------- */
+    function renderProfessionals(){
+      content.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-weight:800;font-size:18px">Professionals</div>
+            <div class="small">Extension officers, vets, labs & brokers</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="browseServices">Browse services</button>
+            <button class="btn secondary" id="addPro">Add professional</button>
+          </div>
+        </div>
+
+        <div class="grid" id="proGrid"></div>
+      `
+
+      const grid = document.getElementById('proGrid')
+      grid.innerHTML = state.professionals.map(p=>`
+        <div class="card">
+          <img src="${p.image}" alt="${p.name}" />
+          <div style="flex:1">
+            <h4>${p.name}</h4>
+            <div class="muted">${p.role} • ${p.location}</div>
+            <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+              <div class="small">Rating: ${p.rating}</div>
+              <div style="display:flex;gap:8px">
+                <button class="btn secondary" data-id="${p.id}" data-action="view-pro">View</button>
+                <button class="btn" data-id="${p.id}" data-action="hire-pro">Hire</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('')
+
+      grid.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{
+        const id = Number(b.dataset.id)
+        const action = b.dataset.action
+        const p = state.professionals.find(x=>x.id===id)
+        if(action==='view-pro') showPro(p)
+        if(action==='hire-pro') alert(`Requesting service from ${p.name} (demo)`)
+      }))
+
+      document.getElementById('addPro').addEventListener('click', ()=>openAdd('professional'))
+      document.getElementById('browseServices').addEventListener('click', ()=>alert('Service catalogue (demo)'))
+    }
+
+    function showPro(p){
+      modalContent.innerHTML = `
+        <div style="display:flex;gap:12px">
+          <img src="${p.image}" alt="${p.name}" style="width:220px;height:140px;object-fit:cover;border-radius:8px" />
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:18px">${p.name}</div>
+            <div class="muted">${p.role} • ${p.location}</div>
+            <div style="margin-top:8px">Typical fee: ${p.fee}</div>
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <button class="btn" onclick="alert('Scheduling ${p.name} (demo)')">Schedule</button>
+              <button class="btn secondary" onclick="alert('Message ${p.name} (demo)')">Message</button>
+            </div>
+          </div>
+        </div>
+      `
+      modal.classList.add('show')
+    }
+
+    /* ---------- MONETIZATION ---------- */
+    function renderMonetization(){
+      content.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-weight:800;font-size:18px">Monetization</div>
+            <div class="small">How Crop Circle makes money — demo options</div>
+          </div>
+        </div>
+
+        <div class="pricing">
+          <div class="price-card">
+            <div style="font-weight:800">Free</div>
+            <div class="small">Basic listings, limited reach</div>
+            <div style="margin-top:8px;font-weight:700">KES 0 / month</div>
+            <div style="margin-top:8px">Features: 5 free listings, standard support</div>
+            <div style="margin-top:12px"><button class="btn secondary" onclick="alert('You are on Free plan (demo)')">Current plan</button></div>
+          </div>
+
+          <div class="price-card">
+            <div style="font-weight:800">Pro</div>
+            <div class="small">Boosted listings & analytics</div>
+            <div style="margin-top:8px;font-weight:700">KES 2,000 / month</div>
+            <div style="margin-top:8px">Features: boosted listing, featured spot, priority support</div>
+            <div style="margin-top:12px"><button class="btn" onclick="alert('Subscribe to Pro (demo)')">Subscribe</button></div>
+          </div>
+
+          <div class="price-card">
+            <div style="font-weight:800">Transaction Fee</div>
+            <div class="small">1.5% per successful sale (demo)</div>
+            <div style="margin-top:12px"><button class="btn secondary" onclick="alert('Transaction fee details (demo)')">Learn more</button></div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px" class="panel">
+          <div style="font-weight:800;margin-bottom:8px">Promote a listing (Boost)</div>
+          <div class="small">Choose a listing to boost for 7 days — demo payment flow</div>
+          <div style="margin-top:12px">
+            <select id="boostSelect"></select>
+            <button class="btn" id="buyBoost">Boost (KES 500)</button>
+          </div>
+        </div>
+      `
+
+      const boostSelect = document.getElementById('boostSelect')
+      boostSelect.innerHTML = state.products.map(p=>`<option value="${p.id}">${p.title} — ${p.farmer}</option>`).join('')
+      document.getElementById('buyBoost').addEventListener('click', ()=>{
+        const id = Number(boostSelect.value)
+        const item = state.products.find(x=>x.id===id)
+        alert(`Simulated payment: Boosting ${item.title} for KES 500 — listing promoted (demo).`)
+      })
+    }
+
+    /* ---------- Add listing modal ---------- */
+    function openAdd(kind){
+      if(kind==='farmer'){
+        modalContent.innerHTML = `
+          <div style="font-weight:800">Add Farmer</div>
+          <div style="margin-top:8px"><input id="afName" placeholder="Name" style="width:100%;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /></div>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="afLoc" placeholder="Location" style="flex:1;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /><input id="afImg" placeholder="Image seed number (1-999)" style="width:140px;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /></div>
+          <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="saveFarmer">Save</button><button class="btn secondary" id="cancelAddF">Cancel</button></div>
+        `
+        modal.classList.add('show')
+        document.getElementById('saveFarmer').addEventListener('click', ()=>{
+          const name = document.getElementById('afName').value.trim() || 'New Farmer'
+          const loc = document.getElementById('afLoc').value.trim() || 'Unknown'
+          const sig = Number(document.getElementById('afImg').value) || Math.floor(Math.random()*500)
+          const id = Date.now()
+          state.farmers.push({id,name,location:loc,rating:(4+Math.random()).toFixed(1),image:imgUrl('farmer',sig),info:'User added farmer'})
+          modal.classList.remove('show')
+          render()
+        })
+        document.getElementById('cancelAddF').addEventListener('click', ()=>modal.classList.remove('show'))
+        return
+      }
+
+      if(kind==='product'){
+        modalContent.innerHTML = `
+          <div style="font-weight:800">Add Product</div>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="apTitle" placeholder="Title" style="flex:2;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /><select id="apType" style="flex:1;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)"><option value="agro">Agro</option><option value="livestock">Livestock</option></select></div>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="apFarmer" placeholder="Farmer name" style="flex:1;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /><input id="apPrice" placeholder="Price (KES)" style="width:160px;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /></div>
+          <div style="margin-top:8px;display:flex;gap:8px"><input id="apQty" placeholder="Qty" style="flex:1;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /><input id="apImg" placeholder="Image seed number" style="width:160px;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /></div>
+          <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="saveProd">Save</button><button class="btn secondary" id="cancelAddP">Cancel</button></div>
+        `
+        modal.classList.add('show')
+        document.getElementById('saveProd').addEventListener('click', ()=>{
+          const title = document.getElementById('apTitle').value.trim() || 'Untitled'
+          const type = document.getElementById('apType').value
+          const farmer = document.getElementById('apFarmer').value.trim() || 'Unknown'
+          const price = Number(document.getElementById('apPrice').value) || 100
+          const qty = Number(document.getElementById('apQty').value) || 1
+          const sig = Number(document.getElementById('apImg').value) || Math.floor(Math.random()*500)
+          const id = Date.now()
+          state.products.push({id,title,type,price,currency:'KES',farmer,image: imgUrl(type=== 'agro' ? 'agro':'livestock', sig),qty,unit: type==='agro'?'kg':'head'})
+          modal.classList.remove('show')
+          render()
+        })
+        document.getElementById('cancelAddP').addEventListener('click', ()=>modal.classList.remove('show'))
+        return
+      }
+
+      if(kind==='professional'){
+        modalContent.innerHTML = `
+          <div style="font-weight:800">Add Professional</div>
+          <div style="margin-top:8px"><input id="apName" placeholder="Name" style="width:100%;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /></div>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="apRole" placeholder="Role" style="flex:1;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /><input id="apLoc" placeholder="Location" style="width:140px;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)" /></div>
+          <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="savePro">Save</button><button class="btn secondary" id="cancelAddPro">Cancel</button></div>
+        `
+        modal.classList.add('show')
+        document.getElementById('savePro').addEventListener('click', ()=>{
+          const name = document.getElementById('apName').value.trim() || 'New Pro'
+          const role = document.getElementById('apRole').value.trim() || 'Advisor'
+          const loc = document.getElementById('apLoc').value.trim() || 'Unknown'
+          const id = Date.now()
+          state.professionals.push({id,name,role,rating:(4+Math.random()).toFixed(1),location:loc,image:imgUrl('pro', Math.floor(Math.random()*500)),fee:'Contact for pricing'})
+          modal.classList.remove('show')
+          render()
+        })
+        document.getElementById('cancelAddPro').addEventListener('click', ()=>modal.classList.remove('show'))
+        return
+      }
+    }
+
+    // Close modal
+    document.getElementById('closeModal').addEventListener('click', ()=>modal.classList.remove('show'))
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.classList.remove('show') })
+
+    /* ---------- Chart ---------- */
+    let chart = null
+    function updateChart(){
+      // categories counts
+      const counts = state.products.reduce((acc,p)=>{ acc[p.type] = (acc[p.type]||0)+1; return acc }, {})
+      const data = [counts['agro']||0, counts['livestock']||0]
+
+      const ctx = document.getElementById('catChart').getContext('2d')
+      if(chart) chart.destroy()
+      chart = new Chart(ctx, {
+        type:'pie',
+        data:{labels:['Agro','Livestock'],datasets:[{data,backgroundColor:['#06b6d4','#3b82f6']} ]},
+        options:{plugins:{legend:{position:'bottom',labels:{color:'#cfeaf3'}}}}
+      })
+    }
+
+    /* ---------- Helpers ---------- */
+    function renderTopProfessionals(){
+      const el = document.getElementById('proList')
+      if(!el) return
+      el.innerHTML = state.professionals.slice(0,3).map(p=>`
+        <div class="card">
+          <img src="${p.image}" alt="${p.name}" />
+          <div style="flex:1">
+            <h4>${p.name}</h4>
+            <div class="muted">${p.role}</div>
+            <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center"><div class="small">${p.location}</div><div class="pill">★ ${p.rating}</div></div>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    // Seed button
+    document.getElementById('seedData').addEventListener('click', ()=>{
+      if(confirm('Overwrite local demo data with sample seed?')) seed()
+    })
+
+    // Open add listing
+    document.getElementById('openAdd').addEventListener('click', ()=>openAdd('product'))
+
+    // Load initial
+    loadFromStorage()
+    render()
+
+    // Expose some helpers for in-modal buttons
+    window.openAdd = openAdd
+    window.alert = window.alert.bind(window)
+  </script>
+</body>
+</html>
